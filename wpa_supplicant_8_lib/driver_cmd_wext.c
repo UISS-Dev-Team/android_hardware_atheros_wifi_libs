@@ -18,7 +18,8 @@
 #include <net/if_arp.h>
 #include <net/if.h>
 
-#include "wireless_copy.h"
+#include "linux_wext.h"
+//#include "wireless_copy.h" replaced by above
 #include "common.h"
 #include "driver.h"
 #include "eloop.h"
@@ -33,6 +34,9 @@
 #include "scan.h"
 
 #include "driver_cmd_wext.h"
+#ifdef ANDROID
+#include "android_drv.h"
+#endif /* ANDROID */
 
 typedef enum {
 	POWER_MODE_AUTO,
