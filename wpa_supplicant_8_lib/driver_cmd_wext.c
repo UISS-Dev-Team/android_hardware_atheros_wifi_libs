@@ -2,7 +2,7 @@
  * Driver interaction with extended Linux Wireless Extensions for the
  *  Atheros AR600x kernel drivers.
  *
- * Copyright (c) 2012 Eduardo José Tagle <ejtagle@tutopia.com> 
+ * Copyright (c) 2012 Eduardo José Tagle <ejtagle@tutopia.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,7 +19,6 @@
 #include <net/if.h>
 
 #include "linux_wext.h"
-//#include "wireless_copy.h" replaced by above
 #include "common.h"
 #include "driver.h"
 #include "eloop.h"
@@ -34,9 +33,8 @@
 #include "scan.h"
 
 #include "driver_cmd_wext.h"
-#ifdef ANDROID
 #include "android_drv.h"
-#endif /* ANDROID */
+
 
 typedef enum {
 	POWER_MODE_AUTO,
@@ -60,7 +58,7 @@ static int wpa_driver_atheros_pwr_mode(struct wpa_driver_wext_data *drv, int mod
 	return 0;
 }
 #define AR6000_IOCTL_WMI_SET_CHANNELPARAMS   (SIOCIWFIRSTPRIV+16)
-#define AR6000_IOCTL_WMI_GET_TARGET_STATS    (SIOCIWFIRSTPRIV+25) 
+#define AR6000_IOCTL_WMI_GET_TARGET_STATS    (SIOCIWFIRSTPRIV+25)
 #define AR6000_IOCTL_EXTENDED                (SIOCIWFIRSTPRIV+31)
 #define AR6000_XIOCTRL_WMI_SET_WLAN_STATE                       35
 
@@ -146,7 +144,7 @@ static int wpa_driver_atheros_cfg_chan(struct wpa_driver_wext_data *drv, int num
 		return -1;
 	}
 	return 0;
-} 
+}
 
 /**
  * wpa_driver_wext_set_scan_timeout - Set scan timeout to report scan completion
@@ -199,7 +197,7 @@ int wpa_driver_wext_combo_scan(void *priv, struct wpa_driver_scan_params *params
 			   __FUNCTION__, (unsigned long) ssid_len);
 		return -1;
 	}
-	
+
 	if (!drv->driver_is_started) {
 		wpa_printf(MSG_DEBUG, "%s: Driver stopped", __func__);
 		return 0;
@@ -225,10 +223,10 @@ int wpa_driver_wext_combo_scan(void *priv, struct wpa_driver_scan_params *params
 	if (ioctl(drv->ioctl_sock, SIOCSIWSCAN, &iwr) < 0) {
 		wpa_printf(MSG_ERROR, "ioctl[SIOCSIWSCAN]");
 		return -1;
-	} 
+	}
 	return ret;
 }
- 
+
 static char *wpa_driver_get_country_code(int channels)
 {
 	char *country = "US"; /* WEXT_NUMBER_SCAN_CHANNELS_FCC */
@@ -238,7 +236,7 @@ static char *wpa_driver_get_country_code(int channels)
 	else if( channels == WEXT_NUMBER_SCAN_CHANNELS_MKK1)
 		country = "JP";
 	return country;
-} 
+}
 
 static int wpa_driver_ar6000_get_ifflags_ifname(struct wpa_driver_wext_data *drv,
 					      const char *ifname, int *flags)
@@ -293,7 +291,7 @@ static int wpa_driver_ar6000_set_ifflags_ifname(struct wpa_driver_wext_data *drv
 static int wpa_driver_ar6000_set_ifflags(struct wpa_driver_wext_data *drv, int flags)
 {
 	return wpa_driver_ar6000_set_ifflags_ifname(drv, drv->ifname, flags);
-} 
+}
 
 /**
  * get_max_scan_ssids - get the maximum number of SSIDS the adapter
@@ -330,12 +328,12 @@ int wpa_driver_wext_driver_cmd(void *priv, char *cmd, char *buf, size_t buf_len)
 		return -1;
 	}
 
-	if (drv->host_asleep) {
-		return 0; /* just return due to system suspend */
-	}
+	//if (drv->host_asleep) {
+	//	return 0; /* just return due to system suspend */
+	//}
 
 	if (os_strcmp(cmd, "RSSI")==0 || os_strcasecmp(cmd, "RSSI-APPROX") == 0) {
-	
+
 		int rssi = 255;
 		struct iwreq iwr;
 		struct iw_statistics stats;
@@ -354,17 +352,17 @@ int wpa_driver_wext_driver_cmd(void *priv, char *cmd, char *buf, size_t buf_len)
 			if (drv->errors > DRV_NUMBER_SEQUENTIAL_ERRORS) {
 				drv->errors = 0;
 				wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "HANGED");
-			}	
+			}
 		}
 
 		if (rssi == 255)
 			rssi = -200;
 		else
 			rssi += (161 - 256);
-		return os_snprintf(buf, buf_len, "SSID rssi %d\n", rssi); 
-		
+		return os_snprintf(buf, buf_len, "SSID rssi %d\n", rssi);
+
 	} else if (os_strcmp(cmd, "LINKSPEED")==0) {
-	
+
 		struct iwreq iwr;
 		os_memset(&iwr, 0, sizeof(iwr));
 		os_strncpy(iwr.ifr_name, drv->ifname, IFNAMSIZ);
@@ -380,32 +378,27 @@ int wpa_driver_wext_driver_cmd(void *priv, char *cmd, char *buf, size_t buf_len)
 			if (drv->errors > DRV_NUMBER_SEQUENTIAL_ERRORS) {
 				drv->errors = 0;
 				wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "HANGED");
-			}	
+			}
 		}
 
 		return -1;
-		
+
 	} else if( os_strcasecmp(cmd, "RELOAD") == 0 ) {
-	
+
 		wpa_printf(MSG_DEBUG,"Reload command");
 		wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "HANGED");
 		return 0;
-		
-	} else if( os_strcasecmp(cmd, "BGSCAN-START") == 0 ) {
-	
-		return 0;
-		
-	} else if( os_strcasecmp(cmd, "BGSCAN-STOP") == 0 ) {
-	
-		return 0;
 
+	} else if( os_strcasecmp(cmd, "BGSCAN-START") == 0 ) {
+		return 0;
+	} else if( os_strcasecmp(cmd, "BGSCAN-STOP") == 0 ) {
+		return 0;
 	} else if( os_strncasecmp(cmd, "CSCAN", 5) == 0 ) {
 		struct iwreq iwr;
 		struct iw_scan_req req;
-	
 		/* Emulate using a regular scan */
 		char* ssid_ptr = os_strstr(cmd, "SSID=");
-		
+
 		os_memset(&iwr, 0, sizeof(iwr));
 		os_strlcpy(iwr.ifr_name, drv->ifname, IFNAMSIZ);
 
@@ -413,17 +406,17 @@ int wpa_driver_wext_driver_cmd(void *priv, char *cmd, char *buf, size_t buf_len)
 			char* end_ptr1 = os_strstr(ssid_ptr, "CH=");
 			char* end_ptr2 = os_strchr(ssid_ptr, ',');
 			int ssid_len;
-			
+
 			ssid_ptr += 5;
 			while (*ssid_ptr == ' ')
 				ssid_ptr++;
-			
+
 			if (!end_ptr1)
 				end_ptr1 = ssid_ptr + os_strlen(ssid_ptr);
 			if (end_ptr2 != NULL && (uint32_t)end_ptr2 < (uint32_t)end_ptr1)
 				end_ptr1 = end_ptr2;
 			ssid_len = (uint32_t)end_ptr1 - (uint32_t)ssid_ptr;
-			
+
 			os_memset(&req, 0, sizeof(req));
 			req.essid_len = ssid_len;
 			req.bssid.sa_family = ARPHRD_ETHER;
@@ -433,27 +426,21 @@ int wpa_driver_wext_driver_cmd(void *priv, char *cmd, char *buf, size_t buf_len)
 			iwr.u.data.length = sizeof(req);
 			iwr.u.data.flags = IW_SCAN_THIS_ESSID;
 		}
-		
 
 		if (ioctl(drv->ioctl_sock, SIOCSIWSCAN, &iwr) < 0) {
 			wpa_printf(MSG_ERROR, "ioctl[SIOCSIWSCAN]");
 			return -1;
-		} 
-	
-		wpa_driver_wext_set_scan_timeout(priv);
-		wpa_supplicant_notify_scanning(wpa_s, 1); 
-		return 0;
-	
-	} else if( os_strcasecmp(cmd, "GETPOWER") == 0) {
-	
-		return os_snprintf(buf, buf_len, "powermode = 1"); // Active
-		
-	} else if( os_strcasecmp(cmd, "GETBAND") == 0) {
+		}
 
+		wpa_driver_wext_set_scan_timeout(priv);
+		wpa_supplicant_notify_scanning(wpa_s, 1);
+		return 0;
+
+	} else if( os_strcasecmp(cmd, "GETPOWER") == 0) {
+		return os_snprintf(buf, buf_len, "powermode = 1"); // Active
+	} else if( os_strcasecmp(cmd, "GETBAND") == 0) {
 		return os_snprintf(buf, buf_len, "Band 0"); // Auto
-		
 	} else if (os_strcmp(cmd, "MACADDR")==0) {
-	
 		// reply comes back in the form "Macaddr = XX.XX.XX.XX.XX.XX" where XX
 		struct ifreq ifr;
 		os_memset(&ifr, 0, sizeof(ifr));
@@ -470,58 +457,44 @@ int wpa_driver_wext_driver_cmd(void *priv, char *cmd, char *buf, size_t buf_len)
 			if (drv->errors > DRV_NUMBER_SEQUENTIAL_ERRORS) {
 				drv->errors = 0;
 				wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "HANGED");
-			}	
+			}
 		}
 
 	} else if (os_strcmp(cmd, "SCAN-ACTIVE")==0) {
-	
 		return 0; /* unsupport function */
-		
 	} else if (os_strcmp(cmd, "SCAN-PASSIVE")==0) {
-	
 		return 0; /* unsupport function */
-		
 	} else if (os_strcmp(cmd, "START")==0) {
-	
 		if ((ret = wpa_driver_atheros_wlan_ctrl(drv, 1)) == 0) {
-			
 			drv->driver_is_started = TRUE;
 			drv->errors = 0;
 			linux_set_iface_flags(drv->ioctl_sock, drv->ifname, 1);
-			
 			wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "STARTED");
-
 		} else {
 			wpa_printf(MSG_DEBUG, "Fail to start WLAN");
 			drv->errors++;
 			if (drv->errors > DRV_NUMBER_SEQUENTIAL_ERRORS) {
 				drv->errors = 0;
 				wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "HANGED");
-			}	
+			}
 		}
 
 		return 0;
-		
 	} else if (os_strcmp(cmd, "STOP")==0) {
-	
 		if ((ret = wpa_driver_atheros_wlan_ctrl(drv, 0)) == 0) {
-		
 			wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "STOPPED");
 			linux_set_iface_flags(drv->ioctl_sock, drv->ifname, 0);
 			drv->errors = 0;
 			drv->driver_is_started = FALSE;
-			
 		} else {
 			wpa_printf(MSG_DEBUG, "Fail to stop WLAN");
 			drv->errors++;
 			if (drv->errors > DRV_NUMBER_SEQUENTIAL_ERRORS) {
 				drv->errors = 0;
 				wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "HANGED");
-			}	
+			}
 		}
-		
 		return 0;
-		
 	} else if (os_strncmp(cmd, "POWERMODE ", 10)==0) {
 
 		int mode;
@@ -530,47 +503,22 @@ int wpa_driver_wext_driver_cmd(void *priv, char *cmd, char *buf, size_t buf_len)
 		}
 		return -1;
 
-	} else if (os_strcmp(cmd, "SCAN-CHANNELS")==0) {
-	
-		// reply comes back in the form "Scan-Channels = X" where X is the number of channels
-		int val = drv->scan_channels;
-#if 0
-		return os_snprintf(buf, buf_len, "Scan-Channels = %d\n", val);
-#else
-		return os_snprintf(buf, buf_len, "COUNTRY %s",
-			wpa_driver_get_country_code(val));
-#endif 
-		
-	} else if (os_strncmp(cmd, "SCAN-CHANNELS ", 14)==0) {
-	
-		int chan;
-		if (sscanf(cmd, "%*s %d", &chan) != 1)
-			return -1;
-		if ((chan == 11) || (chan == 13) || (chan == 14)) {
-			if ((ret = wpa_driver_atheros_cfg_chan(drv, chan)) == 0) {
-				drv->errors = 0;
-				drv->scan_channels = chan;
-				return 0;
-			} else {
-				wpa_printf(MSG_ERROR, "%s failed (%d): %s", __func__, ret, cmd);
-				drv->errors++;
-				if (drv->errors > DRV_NUMBER_SEQUENTIAL_ERRORS) {
-					drv->errors = 0;
-					wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "HANGED");
-				}	
-			}
-		}
-		return -1;
+        } else if( os_strncasecmp(cmd, "SCAN-CHANNELS", 13) == 0 ) {
+                int no_of_chan;
+
+                no_of_chan = atoi(cmd + 13);
+                os_snprintf(buf, buf_len, "COUNTRY %s",
+                        wpa_driver_get_country_code(no_of_chan));
 
 	} else if (os_strncmp(cmd, "BTCOEXMODE ", 11)==0) {
 		int mode;
 		if (sscanf(cmd, "%*s %d", &mode)==1) {
-			/* 
-			 * Android disable BT-COEX when obtaining dhcp packet except there is headset is connected 
+			/*
+			 * Android disable BT-COEX when obtaining dhcp packet except there is headset is connected
 			 * It enable the BT-COEX after dhcp process is finished
 			 * We ignore since we have our way to do bt-coex during dhcp obtaining.
 			 */
-			switch (mode) {			
+			switch (mode) {
 			case 1: /* Disable*/
 				break;
 			case 0: /* Enable */
@@ -588,19 +536,19 @@ int wpa_driver_wext_driver_cmd(void *priv, char *cmd, char *buf, size_t buf_len)
 		return 0; /* ignore it */
 	} else if (os_strcmp(cmd, "RXFILTER-START")==0) {
 		int flags;
-		if (wpa_driver_ar6000_get_ifflags(drv, &flags) == 0) {	
+		if (wpa_driver_ar6000_get_ifflags(drv, &flags) == 0) {
 			return wpa_driver_ar6000_set_ifflags(drv, flags & ~IFF_MULTICAST);
 		}
 	} else if (os_strcmp(cmd, "RXFILTER-STOP")==0) {
 		int flags;
-		if (wpa_driver_ar6000_get_ifflags(drv, &flags) == 0) {	
+		if (wpa_driver_ar6000_get_ifflags(drv, &flags) == 0) {
 			return wpa_driver_ar6000_set_ifflags(drv, flags | IFF_MULTICAST);
 		}
 	} 
 
 	return -1;
 }
- 
+
 int wpa_driver_signal_poll(void *priv, struct wpa_signal_info *si)
 {
 	char buf[MAX_DRV_CMD_SIZE];
